@@ -69,9 +69,17 @@ public:
         }
     };
     iterator begin() {
+<<<<<<< HEAD
         return iterator(this, 0);
     }
     iterator end() {
+=======
+        //return iterator((MapPair<K, V>*)_item, _map, _size, 0);
+        return iterator(this, 0);
+    }
+    iterator end() {
+        //return iterator((MapPair<K, V>*)_item, _map, _size, _size);
+>>>>>>> memtable
         return iterator(this, _size);
     }
 public:

@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<tinytable name="users" desc="用户表" expired="-1" loadtype="none" type="db" firstsource="cache">
+    <columns>
+        <column name="charac_id" desc="id" datatype="uint64" is_primary='1'/>       
+        <column name="name" desc="用户名" datatype="string" maxlen="30" />
+        <column name="user_level" desc="等级" datatype="uint16"  />
+        <column name="exp" desc="经验" datatype="int32"  />
+        <column name="money" desc="帮派" datatype="int64"/>
+        <column name="gold" desc="id" datatype="int32"/>       
+        <column name="gang" desc="id" datatype="int32"/>       
+        <column name="is_online" desc="id" datatype="int32"/>       
+        <column name="alli" desc="id" datatype="int32"/>       
+        <column name="last_login_ip" desc="id" datatype="string"/>       
+        <column name="login_name" desc="id" datatype="string"/>       
+    </columns>
+    <uniques>     
+        <unique desc="姓名索引">        
+            <col name="name"/>       
+        </unique>        
+        <unique desc="登录名索引">        
+            <col name="login_name"/>       
+        </unique>
+    </uniques>
+    <clusters>    
+        <cluster desc="帮派">
+            <master desc="">        
+                <col name="gang"/>      
+            </master>       
+            <slave  desc="">           
+                <col name="charac_id"/>        
+            </slave> 
+        </cluster>    
+        <cluster desc="联盟">
+            <master desc="">        
+                <col name="alli"/>      
+            </master>       
+            <slave  desc="">           
+                <col name="charac_id"/>        
+            </slave> 
+        </cluster>
+        <cluster desc="在线状态">
+            <master desc="">        
+                <col name="is_online"/>      
+            </master>       
+            <slave  desc="">           
+                <col name="charac_id"/>        
+            </slave> 
+        </cluster>
+    </clusters>   
+    <sorts>    
+        <sort desc="money排行" type="1">
+            <master desc="">
+                <col name="charac_id" />
+            </master>
+            <slave  desc="">           
+                <col name="money"/>        
+            </slave> 
+        </sort>    
+        <sort desc="等级排行" type="0">
+            <master desc="">
+                <col name="charac_id" />
+            </master>
+            <slave  desc="level和exp 联合决定大小">           
+                <col name="user_level"/>        
+                <col name="exp"/>        
+            </slave> 
+        </sort> 
+    </sorts>
+</tinytable>

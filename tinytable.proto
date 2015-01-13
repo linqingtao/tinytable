@@ -1,0 +1,161 @@
+package tinytable;
+
+message columns {
+	repeated column column = 1;
+};
+
+message column {
+	required string name = 1;
+	required string datatype = 2;
+	optional int32 maxlen = 3;
+	optional bool is_primary = 4;
+	optional string desc = 5;
+    optional int32 serial = 6;
+};
+
+message col {
+    required string name = 1;
+}
+
+message cols {
+    repeated col col = 1;
+}
+
+message uniques {
+	repeated unique unique = 1;
+}
+
+message unique {
+	repeated col col = 1;
+};
+
+message master {
+	repeated col col = 1;
+};
+
+message slave {
+	repeated col col = 1;
+}
+
+message cluster {
+    required master master = 1;
+    required slave slave = 2;
+}
+
+message clusters {
+	repeated cluster cluster = 1;
+}
+
+message sort {
+	optional string type = 1;
+	optional master master = 2;
+	optional slave  slave = 3;
+};
+
+message sorts {
+    repeated sort sort = 1;
+}
+
+message queue {
+	optional string type = 1;
+	optional int32  max_size = 2;
+	optional master master = 3;
+	optional slave  slave = 4;
+};
+
+message queues {
+    repeated queue queue = 1;
+}
+
+
+message condition {
+	optional int32 interval_s = 1;
+	optional int32 interval_ms = 2;
+	optional int32 weekday = 3;
+	optional int32 hour = 4;
+	optional int32 minute = 5;
+	optional int32 second = 6;
+	optional string desc = 7;
+};
+
+message colfunc {
+	optional string name = 1;
+    required string  ops_type = 2;
+	optional string value = 3;
+	optional string desc = 4;
+    optional string min = 5;
+    optional string max = 6;
+};
+
+message func {
+	repeated colfunc colfunc = 1;
+};
+
+message timertrigger {
+	optional string name = 1;
+	optional string desc = 2;
+	required string type = 3;
+	required string timecol = 4;
+	required condition condition = 5;
+	required func func = 6;
+};
+
+message timertriggers {
+    repeated timertrigger timertrigger = 1;
+}
+
+message triggers {
+	optional timertriggers timertriggers = 1;
+};
+
+
+
+message tinytable {
+	required string name = 1;
+	optional string desc = 2;
+	optional string servercol = 3;
+	required int32 expired = 4;
+	optional string loadtype = 5;
+    optional string type = 6;
+	optional string firstsource = 7;
+    optional string updatetype = 8;
+	optional columns columns = 9;
+	optional uniques uniques = 10;
+	optional clusters clusters = 11;
+	optional sorts sorts = 12;
+	optional triggers triggers = 13;
+	optional queues queues = 14;
+}
+
+
+message table {
+    required string name = 1;
+    optional string update_type = 2;
+    optional int32  save = 3;
+}
+message tables {
+    repeated table table = 1;
+}
+
+
+message tablecol {
+    required string name = 1;
+    required cols cols = 2;
+}
+
+message tablecols {
+    repeated tablecol tablecol = 1;
+}
+
+message expire {
+    required string name = 1;
+    required int32 timeout = 2;
+    required tablecols tablecols = 3;
+}
+
+message expires {
+    repeated expire expire = 1;
+}
+
+
+

@@ -5,6 +5,9 @@
 #include <limits>
 #include "atomiccache.h"
 
+
+#define MAX_LEVEL 24 //Should be choosen as log(1/p)(n)
+
 template<typename T>
 bool inline CASPTR(T** ptr, T* old, T* value){
     return __sync_bool_compare_and_swap(ptr, old, value);
@@ -54,7 +57,7 @@ class SkipList {
         void clear();
         struct iterator {
         iterator() : ptr(NULL), level(0) {}
-        iterator(Node<T>* node, int level_) : ptr(UnAllMark(node)), level(level_) {}
+        iterator(Node<T>* node, int level_) : ptr(Unmark(node)), level(level_) {}
         Node<T>* ptr;
         int level;
         T operator*() {

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <vector>
-#include "skiplist.h"
+#include "atomicskiplist.h"
 #include "locks.h"
 #include <string.h>
 
