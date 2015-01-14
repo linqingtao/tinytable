@@ -3,6 +3,7 @@
 #include "proto_config.h"
 #include "config.h"
 #include "tlsbuffer.h"
+#include "serial_table.h"
 
 namespace tinytable {
 
@@ -197,6 +198,11 @@ int  MemTable::init(const char* id_path, const char* id_file, const char* table_
         }
     }
     closedir(dir);
+    // serial table
+    if (!Serial::global_init()) {
+        TT_FATAL_LOG("global init serial error");
+        return -1;
+    }
     // init expire && trigger
     for (int k = 0; k < MAX_TABLE_NUM; ++k) {
         if (_tables[k] == NULL) {continue;}
