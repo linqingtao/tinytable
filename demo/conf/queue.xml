@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<tinytable name="queue" desc="测试表" expired="-1" loadtype="all" type="db" firstsource="db">
+    <columns>
+        <column name="A" desc="" datatype="int32" is_primary="1" />
+        <column name="B" desc="" datatype="int32"  />
+        <column name="C" desc="" datatype="string"  />
+        <column name="D" desc="" datatype="int32"  />
+    </columns>
+    <queues>
+        <queue type="asc" max_size="4">
+            <slave>
+                <col name="A"/>
+            </slave>
+        </queue>
+    </queues>
+</tinytable>
