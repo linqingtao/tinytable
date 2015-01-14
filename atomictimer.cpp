@@ -189,6 +189,11 @@ bool AtomicTimer::init(bool absolute, runfunc* func, void* func_arg, int level, 
     for (i = 1; i < _level; i++) {
         _bucket_step[i] = _bucket_step[i - 1] * _rate[i];
     }
+    // level step
+    /*_level_total
+    for (i = 1; i < _level; i++) {
+        _level_step[i] = _bucket_step[i - 1] * _bucket[i] * _rate[i - 1];
+    }*/
     // level base
     _level_max[0] = AtomicTimer::global_tick_us * _bucket[0];
     for (i = 1; i < _level; i++) {
@@ -324,6 +329,7 @@ bool AtomicTimer::_addTimer(TimerNode* node) {
     int level = 0;
     int bucket = 0;
     if (now >= expired_us) {
+        //printf("addtimer expire now %lld expired %lld\n", now, expired_us);
         (*_func)(node->callback, _func_arg);
         node->reset(now);
         if (node->round == 0) {
@@ -337,8 +343,10 @@ bool AtomicTimer::_addTimer(TimerNode* node) {
     int ret = _getPos(expired_us, level, bucket);
     if (POS_OVERFLOW == ret) {
         TT_WARN_LOG("add timer error:overflow us %lld interval %lu round %d key %lu\n", expired_us, node->interval_us, node->round, node->key);
+        //_cache->push(node);
         return false;
     } else if (POS_EXPIRED == ret) {
+        //printf("addtimer pos expire now %lld expired %lld\n", now, expired_us);
         (*_func)(node->callback, _func_arg);
         long long current = now;
         long long expired_time = prev;
@@ -359,6 +367,7 @@ bool AtomicTimer::_addTimer(TimerNode* node) {
         }
         return _addTimer(node);
     }
+    //printf("add node time %lld lvl %d buc %d\n", expired_us, level, bucket);
     // check if exist
     AtomicHashmap<uint64_t, std::pair<int, int> >::iterator iter = _timer_index->find(node->key);
     if (iter != _timer_index->end()) {
@@ -376,6 +385,7 @@ bool AtomicTimer::_addTimer(TimerNode* node) {
         _wheel[level][bucket]->Remove(node->key);
         return false;
     }
+    //printf("add node time %lld lvl %d buc %d success!\n", expired_us, level, bucket);
     return true;
 }
 
@@ -395,6 +405,7 @@ bool AtomicTimer::addTimer(uint64_t us_time, timer_callback func, uint64_t inter
     }
     // do a easy check
     if (us_time == 0 &&round == 1) {
+        //printf("expired in add\n");
         (*_func)(func, _func_arg);
         return true;
     }
@@ -408,6 +419,7 @@ bool AtomicTimer::addTimer(uint64_t us_time, timer_callback func, uint64_t inter
         *newKey = node->key;
     }
     if (us_time == 0) {
+        //printf("expired in add time = 0\n");
         (*_func)(func, _func_arg);
         node->reset(now);
         if (node->round == 0) {
@@ -429,21 +441,26 @@ bool AtomicTimer::addTimer(uint64_t us_time, timer_callback func, uint64_t inter
 bool AtomicTimer::addFixedTimer(int wday, int hour, int min, int sec, timer_callback func, uint64_t interval_us, int round, uint64_t key, uint64_t* newKey) {
     long long now = AtomicTimer::now(_absolute);
     time_t now_s = time(NULL);
-    struct tm* timenow;
+    struct tm timenow;
     if (newKey != NULL) {
         *newKey = 0;
+    }
+    if (wday <= 0 && wday != -1) {
+        return false;
     }
     if (round > 1 &&interval_us == 0){
         return false;
     }
-    timenow   =   localtime(&now_s);   
-    int cur_wday = timenow->tm_wday;
-    int cur_hour = timenow->tm_hour;
-    int cur_min = timenow->tm_min;
-    int cur_sec = timenow->tm_sec;
+    localtime_r(&now_s, &timenow);   
+    int cur_wday = timenow.tm_wday;
+    cur_wday = (cur_wday + 6) % 7;
+    int cur_hour = timenow.tm_hour;
+    int cur_min = timenow.tm_min;
+    int cur_sec = timenow.tm_sec;
     int cur_seconds = 0;
     int timer_seconds = 0;
-    if (wday >= 0) {
+    if (wday > 0) {
+        wday -= 1;
         cur_seconds = cur_wday * DAY_SECONDS + cur_hour * HOUR_SECONDS + cur_min * MIN_SECONDS + cur_sec;
         timer_seconds = wday * DAY_SECONDS + hour * HOUR_SECONDS + min * MIN_SECONDS + sec;
     } else if (hour >= 0) {
@@ -500,10 +517,11 @@ bool AtomicTimer::addDailyTimer(int hour, int min, int sec, timer_callback func,
 
 
 bool AtomicTimer::addWeeklyTimer(int day, int hour, int min, int sec, timer_callback func, uint64_t key, uint64_t* newKey) {
-    return addFixedTimer(day - 1, hour, min, sec, func, WEEK_MICROSECONDS, TIMER_FOREVER_LOOP, key, newKey);
+    return addFixedTimer(day, hour, min, sec, func, WEEK_MICROSECONDS, TIMER_FOREVER_LOOP, key, newKey);
 }
 
 void timeout_callback(int sig_no) {
+    //expire(false);
     if (AtomicTimer::global_timer_func != NULL) {
         AtomicQueue<timer_callback>::iterator iter = AtomicTimer::global_timer_func->begin();
         AtomicQueue<timer_callback>::iterator end = AtomicTimer::global_timer_func->end();
@@ -511,6 +529,7 @@ void timeout_callback(int sig_no) {
             (*iter)();
         }
     }
+    //printf("timer is over\n");
 }
 
 void AtomicTimer::start_timer() {
@@ -650,8 +669,12 @@ long long AtomicTimer::_backward(long long current, long long expired_time) {
 
 bool AtomicTimer::_cascadeTimers(int level, int bucket) {
     if (level < 1 || level > _level - 1) {
+        //printf("cascade lvl %d buc %d error\n", level, bucket);
         return false;
     }
+    /*if (0 != (bucket%_rate[level+1])) {
+        return false;
+    }*/
     // push timers to level - 1
     AtomicHashmap<uint64_t, TimerNode*>::iterator iter = _wheel[level][bucket]->begin();
     AtomicHashmap<uint64_t, TimerNode*>::iterator end = _wheel[level][bucket]->end();
@@ -659,6 +682,7 @@ bool AtomicTimer::_cascadeTimers(int level, int bucket) {
         TimerNode* node = iter->second;
          _wheel[level][bucket]->Remove(node->key);
          _timer_index->Remove(node->key);
+        // printf("cas node lvl %d buc %d time %lld\n", level, bucket, node->expired_us);
         if (!_addTimer(node)) {
             TT_FATAL_LOG("timer %lu cascade feom level %d bucket %d to level %d error", node->key, level, bucket, level - 1);
             _cache->push(node);
@@ -705,6 +729,7 @@ long long AtomicTimer::_expire() {
         } else {
             __sync_lock_test_and_set(&AtomicTimer::global_expired_unabsolute_time, expired_time);
         }
+        //printf("diff = %lld buckets = %lld current %lld expired %lld\n", diff, buckets, current, expired_time);
         // cascade idx
         int cascade_level = 0;
         for (int i = 0; i < _level; ++i) {
@@ -725,6 +750,7 @@ long long AtomicTimer::_expire() {
             if (buckets <= 0) {
                 break;
             }
+           // printf("level %d cas buckets %d\n", cascade_level, buckets);
         }
         // reset the buckets
         buckets = total_buckets;
@@ -735,6 +761,7 @@ long long AtomicTimer::_expire() {
                 expired_bucket_num[i] = _bucket[i];
             }
             buckets -= _bucket[i];
+            //printf("expired level %d cur %d num %d\n", i, old_bucket[i], bucket[i]);
             if (buckets <= 0) {
                 break;
             }
@@ -743,12 +770,16 @@ long long AtomicTimer::_expire() {
                 buckets /= _rate[i + 1];
             }
             level_count++;
+            //printf("level %d expire buckets %d\n", level_count, buckets);
         }
+        //printf("expire level num %d \n", level_count);
         // expire all the items
         for (int i = 0; i < level_count; ++i) {
+            //printf("expire level %d bucket num %d\n", i, bucket[i]);
             for (int j = 0; j < expired_bucket_num[i]; ++j) {
                 int buc = old_bucket_index[i] + j;
                 buc %= _bucket[i];
+                //printf("expire level %d bucket %d\n", i, buc);
                 // find the hashmap
                 // expire
                 AtomicHashmap<uint64_t, TimerNode*>::iterator iter = _wheel[i][buc]->begin();
@@ -761,6 +792,11 @@ long long AtomicTimer::_expire() {
                     // this nodes are inserted int the changing time    
                     // condition is rare so we just readd the node
                     if (node->expired_us > expired_time) {
+                        //TT_FATAL_LOG("node error pos:node %llu round %d expired %llu current %llu expired %llu\n", node->key, node->round, node->expired_us, current, expired_time);
+                     //   printf("node error pos:node %llu(level %d bucket %d) round %d expired %llu current %llu expired %llu\n", node->key, i, buc, node->round, node->expired_us, current, expired_time);
+                       /* for (int k = 0; k < _level; ++k) {
+                            printf("index[%d] = %d\n", k, _cur_index[k]);
+                        }*/
                         // add node to next interval
                         if (!_addTimer(node)) {
                             TT_WARN_LOG("readd timer error double check\n");
@@ -769,17 +805,24 @@ long long AtomicTimer::_expire() {
                         continue;
                     }
                     // check round
+                   // printf("before reset node (level %d buc %d time %lld current %lld expired %lld)\n", i, buc, node->expired_us, current, expired_time);
                     node->reset(current);
                     if (node->round > 0 || node->round == TIMER_FOREVER_LOOP) {
                         // add node to next interval
+                        //printf("add node loop(level %d buc %d time %lld current %lld expired %lld)\n", i, buc, node->expired_us, current, expired_time);
                         if (!_addTimer(node)) {
                             TT_WARN_LOG("readd timer error: cur %llu node %llu expired %llu\n", current, node->expired_us, expired_time);
                             _cache->push(node);
                         }
                     } else {
+                  //      printf("reuse node\n");
                         // save the node for reuse
                         _cache->push(node);
                     }
+                    /*    for (int k = 0; k < _level; ++k) {
+                            printf("index[%d] = %d\n", k, _cur_index[k]);
+                        }*/
+                //    printf("expire node(level %d buc %d)\n", i, buc);
                     // run func
                     (*_func)(iter->second->callback, _func_arg);
 
@@ -788,8 +831,10 @@ long long AtomicTimer::_expire() {
         }
         // cascasde nodes
         for (int i = 1; i < cascade_level; i++) {
+            //printf("cas level %d expired num %d cas num %d cur index %d old index %d\n", i, expired_bucket_num[i], cascade_bucket_num[i], _cur_index[i], old_bucket_index[i]);
             for (int j = expired_bucket_num[i]; j < cascade_bucket_num[i]; ++j) {
                 _cascadeTimers(i, (j+old_bucket_index[i])%_bucket[i]);
+              //  printf("cas timers level %d bucket %d\n", i, (j+old_bucket_index[i])%_bucket[i]);
             }
         } 
     }

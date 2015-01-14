@@ -3,22 +3,17 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <boost/function.hpp>
-#include <stdio.h>
 
 
-#include "atomichashmap.h"
+#include "hashmap.h"
 #include "atomiccache.h"
 #include "atomicqueue.h"
+#include "tinytable_log_utils.h"
 
-#if !defined(TT_WARN_LOG)
-#define TT_WARN_LOG printf
-#endif
-#if !defined(TT_DEBUG_LOG)
-#define TT_DEBUG_LOG printf
-#endif
-#if !defined(TT_FATAL_LOG)
-#define TT_FATAL_LOG printf
-#endif
+// for test
+//#define TT_WARN_LOG printf
+//#define TT_DEBUG_LOG printf
+//#define TT_FATAL_LOG printf
 
 
 // this is the timer wheel class
