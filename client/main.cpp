@@ -22,13 +22,13 @@ const char *VERSION_ID = "unknown";
 #endif
 
 
-static void dn_print_version(void)
+static void print_version(void)
 {                       
         printf(" Version\t:\t%s\n", VERSION_ID);
         printf(" Built date\t:\t%s\n", SERVER_BUILT);
 }
 
-void dn_print_help(void)   
+void print_help(void)   
 {               
         printf( "%s", "usage\n");
         printf( "%s", "    --help     | -h     :      print help message\n");
@@ -61,10 +61,10 @@ int main(int argc, char **argv)
         switch (c)
         {
             case 'h':
-                dn_print_help();
+                print_help();
                 exit(1);
             case 'v':
-                dn_print_version();
+                print_version();
                 exit(1);
             case 'c':
                 command = optarg;
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
                 port = atoi(optarg);
                 break;
             default:
-                dn_print_help();
+                print_help();
                 exit(1);
         }
     }
