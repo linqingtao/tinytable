@@ -64,7 +64,7 @@ RETRY:
             }
             RpcPacketHead* res_head = (RpcPacketHead*)res;
             int msg_len = res_head->msg_len;
-            if (res_head->cmd == RPC_CMD_OK) {
+            if (res_head->cmd == RPC_CMD_OK && msg_len == 0) {
                 flag = true;
                 goto END;
             }
