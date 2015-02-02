@@ -5,10 +5,10 @@ The database supports many interfaces, such as insert/get/set/add/dec/del/clear/
 The functions are all multhi-thread safe.
 In the path demo/, demo.cpp shows how to use tinytable.
 # compile
-  autoreconf -fvi
-  ./configure --prefix=your_path
-  make
-  make install
-  cd client
+  autoreconf -fvi &&
+  ./configure --prefix=your_path &&
+  make &&
+  make install &&
+  cd client &&
   make
   
